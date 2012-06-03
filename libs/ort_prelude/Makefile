@@ -13,7 +13,7 @@ ort_prelude.cma: ort_prelude.cmo
 ort_prelude.cmo: ort_prelude.ml
 	ocamlfind ocamlc -c -I +camlp4 $(CAMLP4) ort_prelude.ml
 
-ort_prelude.cmx: ort_prelude.cmi
+ort_prelude.cmx: ort_prelude.ml ort_prelude.cmi
 	ocamlfind ocamlopt -c -I +camlp4 $(CAMLP4) ort_prelude.ml
 
 ort_prelude.cmi: ort_prelude.mli
