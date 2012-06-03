@@ -7,3 +7,5 @@ module Return : sig
 end
 
 val (|>) : 'a -> ('a -> 'b) -> 'b
+
+val string_of_list : char list -> string

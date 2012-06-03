@@ -1,0 +1,5 @@
+name="ort_prelude"
+version="1.0.0"
+description="My own prelude"
+archive(byte)="ort_prelude.cma"
+archive(native)="ort_prelude.cmxa"
