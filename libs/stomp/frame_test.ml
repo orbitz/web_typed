@@ -7,7 +7,10 @@ let test_disconnect _ =
   in
   assert_equal
     Frame.Disconnect
-    (Frame.get_frame_type f)
+    (Frame.get_frame_type f);
+  assert_equal
+    (Some "0")
+    (Frame.get_header "content-length" f)
 
 let suite = "STOMP Frame Test" >:::
   [ "disconnect" >:: test_disconnect ]

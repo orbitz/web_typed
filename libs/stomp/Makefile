@@ -29,10 +29,10 @@ test: frame_test
 	./frame_test
 
 frame_test: frame_test.cmo
-	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,stomp -thread -o frame_test frame_test.cmo
+	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,oUnit,stomp -custom -linkpkg -thread -o frame_test frame_test.cmo
 
 frame_test.cmo: frame_test.ml
-	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,stomp -c -thread frame_test.ml
+	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,oUnit,stomp -c -thread frame_test.ml
 
 clean:
-	rm *.cmo *.cmi *.cmx *.cma *.cmxa *.a *.o
+	rm *.cmo *.cmi *.cmx *.cma *.cmxa *.a *.o frame_test

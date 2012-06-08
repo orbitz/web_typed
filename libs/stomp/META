@@ -1,5 +1,6 @@
 name="stomp"
 version="1.0.0"
 description="STOMP Client"
+requires = "core_extended ort_prelude seq threads"
 archive(byte)="stomp.cma"
 archive(native)="stomp.cmxa"
