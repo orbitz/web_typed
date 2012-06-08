@@ -1,6 +1,6 @@
 CAMLP4=-pp "camlp4o pa_extend.cmo"
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all:  stomp.cma stomp.cmxa
 
@@ -24,6 +24,15 @@ stomp.cmx: frame.cmx
 
 frame.cmx: frame.ml frame.cmi
 	ocamlfind ocamlopt -package core_extended,threads,seq,ort_prelude -c -thread -for-pack Stomp -I +camlp4 $(CAMLP4) frame.ml
+
+test: frame_test
+	./frame_test
+
+frame_test: frame_test.cmo
+	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,stomp -thread -o frame_test frame_test.cmo
+
+frame_test.cmo: frame_test.ml
+	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,stomp -c -thread frame_test.ml
 
 clean:
 	rm *.cmo *.cmi *.cmx *.cma *.cmxa *.a *.o

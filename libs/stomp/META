@@ -1,0 +1,5 @@
+name="stomp"
+version="1.0.0"
+description="STOMP Client"
+archive(byte)="stomp.cma"
+archive(native)="stomp.cmxa"

@@ -40,14 +40,14 @@ type error =
   | Unknown_cmd of string
   | Exn of exn
 
-let make_frame t h b = 
-  { frame_type = t
-  ; headers    = h
-  ; body       = b
-  }
-
 let header_add k v h = (k, v)::h
 let header_get k h = List.Assoc.find h ~equal:(=) k
+
+let content_length body h =
+  header_add
+    "content-length"
+    (string_of_int (String.length body))
+    h
 
 let string_of_ack = function
   | Client -> "client"
@@ -64,6 +64,15 @@ let cmd_of_string = function
     Return.Success Error
   | unknown ->
     Return.Failure (Unknown_cmd unknown)
+
+let make_frame t h b =
+  let h = content_length b h
+  in
+  { frame_type = t
+  ; headers    = h
+  ; body       = b
+  }
+
 
 let get_frame_type frame = frame.frame_type
 

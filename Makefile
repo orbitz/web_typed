@@ -1,11 +1,14 @@
 OCAMLPATH:=$(PWD)/libs:$(OCAMLPATH)
 
-.PHONY: all libs clean
+.PHONY: all libs test clean
 
-all: libs
+all: libs test
 
 libs:
 	$(MAKE) -C libs
+
+test: libs
+	$(MAKE) -C libs test
 
 clean:
 	$(MAKE) -C libs clean
