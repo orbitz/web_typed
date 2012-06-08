@@ -28,10 +28,10 @@ type incoming =
 
 type headers = (string * string) list
 
-type 'a frame = { frame_type : 'a
-		; headers    : headers
-		; body       : string
-		}
+type 'a t = { frame_type : 'a
+	    ; headers    : headers
+	    ; body       : string
+	    }
 
 type parse_state = string
 
