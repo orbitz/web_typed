@@ -1,5 +1,3 @@
-OCAMLPATH:=$(PWD):$(OCAMLPATH)
-
 SUBDIRS=ort_prelude stomp
 
 .PHONY: all clean $(SUBDIRS)

@@ -1,3 +1,5 @@
+OCAMLPATH:=$(PWD)/libs:$(OCAMLPATH)
+
 .PHONY: all libs clean
 
 all: libs
