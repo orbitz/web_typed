@@ -1,0 +1,296 @@
+                      Syntactic Sugar for Monads
+                             November 2008
+
+
+* Contents
+
+COPYING                    -  License under which the present version
+                              is released (a copy of one of the 2
+                              below)
+LGPL                       -  LGPL compatible of Objective Caml
+MIT                        -  Alternate license (upon request)
+ChangeLog                  -  Recent changes
+META.in                    -  Configuration information for findlib
+Makefile                   -  GNU make build rules for the extension
+                              and the test frame
+README                     -  This file
+cc.ml                      -  Interface of delimited continuation
+                              monad
+cc.mli                     -  Implementation of delimited continuation
+                              monad
+exception.ml               -  Implementation of exception monad
+exception.mli              -  Interface of exception monad
+io.ml                      -  Implementation of I/O-monad
+io.mli                     -  Interface of I/O-monad
+monadic_io.ml              -  Example of input/output with the
+                              I/O-monad
+pa_monad.ml                -  Camlp4 syntax extension for Objective
+                              Caml versions 3.10 and later
+pa_monad-camlp4-3.09.ml    -  Camlp4 syntax extension for Objective
+                              Caml version 3.09
+pa_monad-custom-tuareg.el  -  Emacs customization for pa_monad
+pythagorean_triples.ml     -  Nondeterminism monad (backtracking)
+                              coded with "pa_monad.ml"
+test_cc.ml                 -  Test of delimited continuation monad
+test_exception.ml          -  Test of the exception monad
+test_monad.ml              -  Simple test frame for "pa_monad.ml"
+test_rec.ml                -  Test of recursive-binding features
+test_syntax.ml             -  Thorough test of the syntax extension
+utest.ml                   -  Implementation of the unit-test
+                              framework
+utest.mli                  -  Interface of the unit-test framework
+
+
+* Supported Camlp4 Versions
+
+Moving from OCaml version 3.09 to 3.10 the preprocessor, Camlp4, was
+massively revamped.  This invalidated most syntax extensions written
+for version 3.09 including pa_monad.
+
+The current package includes "pa_monad.ml" that works with OCaml-3.10
+up to 3.11.  For convenience we supply "pa_monad-camlp4-3.09.ml" that
+works with the older OCaml-3.09.  See section "How to... Compile" for
+instructions to build with OCaml-3.09.
+
+
+* What It Does
+
+This Camlp4 parser adds some syntactic sugar to beautify monadic
+expressions.  The name of the syntax extension is a bit misleading as
+it does not provide any monad nor monadic computation.  The correct
+name would have been "pa_perform", but it was discarded because of
+lack of specificity.
+
+Example: A simple but realistic example of the use of a list monad
+looks like this
+
+        bind
+          [1; 2; 3]
+          (fun a -> bind
+                      [3; 4; 5]
+                      (fun b -> return (a + b)))
+
+where we assume the appropriate definitions of the functions "bind"
+and "return".  With the help of "pa_monad" this can be written as
+
+        perform
+          a <-- [1; 2; 3];
+          b <-- [3; 4; 5];
+          return (a + b)
+
+which is much clearer and thus easier to understand and maintain.  By
+the way, the expression evaluates to
+
+        [4; 5; 6; 5; 6; 7; 6; 7; 8]
+
+the sum of each pair of values of the input lists.  For more examples
+have a look at the examples "exception.ml" or
+"pythagorean_triples.ml".
+
+
+** Highlights
+
+- Efficient code: The generated code is as efficient as hand-coded.
+- Highly flexible: The "bind" and "failwith" functions can be
+  specified in various ways
+  (a) Binding with default names:
+          perform ...
+  (b) Binding with user-defined names:
+          perform with my_bind and my_failwith in ...
+  (c) One-of-a-kind binding:
+          perform with fun a f -> f a and ... in ...
+  (d) Module-based binding:
+          perform with MyMonad in ...
+      or with OCaml's local modules:
+          let foo ... =
+            let module MyMonad = ... in
+            perform with MyMonad in ...
+
+** Known Issues
+
+See the section "Known Issues" in the documentation.
+
+* How to...
+
+** Compile
+
+        make
+
+Note that "pa_monad.cmo" is the only interesting product file.  There
+is no "pa_monad.cmx" for OCaml just needs the byte-code version of the
+syntax extension.
+
+To compile the old version of pa_monad, using a pre-3.10.0 compiler
+and preprocessor say for example
+
+        make OCAMLC=ocamlc-3.09 \
+             CAMLP4=camlp4o-3.09 \
+             PP-EXT="-pp '\$(CAMLP4) -I . pa_extend.cmo q_MLast.cmo'" \
+             SYNTAX-EXTENSION=pa_monad-camlp4-3.09.cmo
+
+where OCAMLC and CAMLP4 define the name of your compiler and
+preprocessor.
+
+
+** Test
+
+        make test
+
+For OCaml-3.09: Append "test" to the command line given in sub-section
+"Compile".
+
+
+** Generate (HTML) Documentation
+
+        make doc
+
+
+** Install (with findlib)
+
+        make findlib-install
+
+
+** Use
+
+Given the compiled extension "pa_monad.cmo" feed the source into the
+preprocessor by saying
+        ocamlc -pp 'camlp4orf -I . pa_monad.cmo' -c ...
+Depending on where the cmo-file lives the include path needs
+tweaking.
+
+For OCaml-3.09 use
+        ocamlc -pp 'camlp4o -I . pa_monad.cmo' -c ...
+
+After installation, findlib users cast the usual spell
+        ocamlfind ocamlc -package monad -c ...
+
+
+* Emacs - Tuareg Mode
+
+We have included a customization for Tuareg-mode that makes "perform"
+a keyword with the correct indentation behavior.  Include it in your
+".emacs" to activate it.
+
+
+* Useful Literature On Monads
+
+Literature on the use of monads in OCaml is sparse at best.  Most of
+the following articles are either language independent or use the
+Haskell language.  A large bibliography on "Monads and Arrows: Theory
+and Applications" can be found at
+        http://haskell.readscheme.org/monads.html
+
+
+** Philip Wadler, "Monads for functional programming"
+
+    The use of monads to structure functional programs is described.
+    Monads provide a convenient framework for simulating effects found
+    in other languages, such as global state, exception handling,
+    output, or non-determinism.  Three case studies are looked at in
+    detail: how monads ease the modification of a simple evaluator; how
+    monads act as the basis of a datatype of arrays subject to
+    in-place update; and how monads can be used to build parsers.
+
+
+** Brian Hurt and Robert Fischer, "Monad Tutorial for Ocaml"
+
+    Brian Hurt and Robert Fischer wrote a comprehensive monad tutorial
+    particularly for OCaml programmers.
+
+
+** Theodore Norvel, "Monads for the Working Haskell Programmer"
+
+    This short tutorial introduces monads to Haskell programmers.
+
+
+** John Hughes, Magnus Carlsson, "Systematic Design of Monads"
+
+    Many useful monads can be designed in a systematic way, by
+    successively adding facilities to a trivial monad.  The
+    capabilities that can be added in this way include state,
+    exceptions, backtracking, and output.  Here we give a brief
+    description of the trivial monad, each kind of extension, and
+    sketches of some interesting operations that each monad supports.
+
+
+** Jeff Newbern, "All About Monads"
+
+    This tutorial aims to explain the concept of a monad and its
+    application to functional programming in a way that is easy to
+    understand and useful to beginning and intermediate Haskell
+    programmers.  Familiarity with the Haskell language is assumed,
+    but no prior experience with monads is required.  The tutorial
+    covers a lot of material and the later sections require a thorough
+    understanding of the earlier material.  Many code examples are
+    provided along the way to demonstrate monadic programming.  It is
+    not advisable to attempt to absorb all of the material in a single
+    reading.
+
+
+** Philip Wadler, "Comprehending Monads"
+
+    Category theorists invented monads in the 1960's to concisely
+    express certain aspects of universal algebra.  Functional
+    programmers invented list comprehensions in the 1970's to
+    concisely express certain programs involving lists.  This paper
+    shows how list comprehensions may be generalized to an arbitrary
+    monad, and how the resulting programming feature can concisely
+    express in a pure functional language some programs that
+    manipulate state, handle exceptions, parse text, or invoke
+    continuations.  A new solution to the old problem of destructive
+    array update is also presented.  No knowledge of category theory
+    is assumed.
+
+
+** Simon Peyton Jones, "Tackling the Awkward Squad"
+
+    Functional programming may be beautiful, but to write real
+    applications we must grapple with awkward real-world issues:
+    input/output, robustness, concurrency, and interfacing to programs
+    written in other languages.
+
+    These lecture notes give an overview of the techniques that have
+    been developed by the Haskell community to address these problems.
+    I introduce various proposed extensions to Haskell along the way,
+    and I offer an operational semantics that explains what these
+    extensions mean.
+
+
+** Richard Bird, "Introduction to Functional Programming using Haskell", 2nd ed.
+
+    Chapter 10 of this book is dedicated solely to monads.  They are
+    introduced in a very didactic way.  Chapter 11 treats writing
+    parsers based on monads.
+
+
+* Authors
+
+Please report comments or suggestions to the authors.
+
+- Jacques Carette, <carette AT mcmaster DOT ca>
+- Lydia E. van Dijk, <lvandijk AT freenet DOT de>
+- Oleg Kiselyov, <oleg AT pobox DOT com>
+
+
+* LGPL
+
+The "pa_monad" extension is free software; you can redistribute it
+and/or modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License in the file "LGPL" for more details.
+
+
+* MIT
+
+You may also obtain this software under the MIT license upon request
+to the authors.  In that case, see "MIT" for the details.
+
+
+local variables:
+mode: outline
+end:

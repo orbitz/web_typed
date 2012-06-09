@@ -1,14 +1,17 @@
 SUBDIRS=ort_prelude stomp
 
-.PHONY: all clean test $(SUBDIRS)
+.PHONY: all clean test pa_monad $(SUBDIRS)
 
-all: ort_prelude stomp
+all: $(SUBDIRS) pa_monad
 
 ort_prelude:
 	$(MAKE) -C ort_prelude
 
 stomp: ort_prelude
 	$(MAKE) -C stomp
+
+pa_monad:
+	$(MAKE) -C pa_monad
 
 test: all
 	for dir in $(SUBDIRS); do \
