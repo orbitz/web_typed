@@ -1,0 +1,6 @@
+name="ort_async"
+version="1.0.0"
+description="Some useful wrappers for Async"
+requires = "async ort_prelude threads"
+archive(byte)="ort_async.cma"
+archive(native)="ort_async.cmxa"
