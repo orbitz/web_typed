@@ -124,40 +124,71 @@ let ack ?(h = []) ~mid =
 let disconnect =
   make_frame Disconnect [] ""
 
-let rec parse_msg m =
-  Return.lift (fun () -> (msg m))
+let rec parse_frames m =
+  Return.lift (fun () -> msg m)
 and msg = parser
-  | [< c = text; ''\n'; h = headers; b = body >] -> (c, h, b)
+  | [< f = frame; fs = frame_aux >] -> f::fs
+and frame = parser
+  | [< c = text
+    ;  ''\n' ?? "newline expected after command"
+    ;  h = headers
+    ;  b = body h
+    >] -> (c, h, b)
+and frame_aux = parser
+  | [< ''\000'; f = frame; fs = frame_aux >] -> f::fs
+  | [< >] -> []
 and headers = parser
   | [< ''\n' >] -> []
-  | [< key = text; '':'; value = text; ''\n'; hs = headers >] -> (key, value)::hs
+  | [< key = header_key
+    ;  '':' ?? "Colon expected"
+    ;  value = header_value
+    ;  ''\n' ?? "Newline expected after header"
+    ;  hs = headers
+    >] -> (key, value)::hs
 and text s = s |> Seq.take_while ~f:((<>) '\n') |> Seq.to_list |> string_of_list
-and body s = s |> Seq.to_list |> string_of_list
+and header_key s = s |> Seq.take_while ~f:((<>) ':') |> Seq.to_list |> string_of_list
+and header_value s = s |> text |> String.strip
+and body h s =
+  match header_get "content-length" h with
+    | None ->
+      s |> Seq.take_while ~f:((<>) '\000') |> Seq.to_list |> string_of_list
+    | Some l ->
+      let l = int_of_string l
+      in
+      s |> Seq.take l |> Seq.to_list |> string_of_list
 
+
+let parse_state = ""
+
+let rec frames_of_tuples accum = function
+  | [] ->
+    Return.Success (List.rev accum)
+  | (cmd, headers, body)::fs -> begin
+    match cmd_of_string cmd with
+      | Return.Success cmd ->
+	let frame = make_frame cmd headers body
+	in
+	frames_of_tuples (frame::accum) fs
+      | Return.Failure f ->
+	Return.Failure f
+  end
 
 let rec frames_of_data ~s ~d =
-  let s = s ^ d 
+  let s = s ^ d
   in
-  match String.lsplit2 ~on:'\000' s with
+  match String.rsplit2 ~on:'\000' s with
     | None ->
       Return.Success ([], s)
-    | Some (msg, rest) -> begin
-      match parse_msg (Seq.of_string msg) with
-	| Return.Success (cmd, headers, body) -> begin
-	  match cmd_of_string cmd with
-	    | Return.Success cmd -> begin
-	      let frame = make_frame cmd headers body
-	      in
-	      match frames_of_data ~s:rest ~d:"" with
-		| Return.Success (frames, leftover) ->
-		  Return.Success (frame::frames, leftover)
-		| Return.Failure f ->
-		  Return.Failure f
-	    end
+    | Some (msgs, rest) -> begin
+      match parse_frames (Seq.of_string msgs) with
+	| Return.Success fs -> begin
+	  match frames_of_tuples [] fs with
+	    | Return.Success frames ->
+	      Return.Success (frames, rest)
 	    | Return.Failure f ->
 	      Return.Failure f
 	end
 	| Return.Failure f ->
 	  Return.Failure (Exn f)
     end
-      
+

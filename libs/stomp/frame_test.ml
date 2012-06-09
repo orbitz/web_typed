@@ -1,18 +1,148 @@
 open OUnit
 
 open Stomp
+open Ort_prelude
 
-let test_disconnect _ =
-  let f = Frame.disconnect
+let test_parse_single_msg _ =
+  let data = "CONNECTED\nsession:foo\n\n\000"
+  and parse_state = Frame.parse_state
   in
-  assert_equal
-    Frame.Disconnect
-    (Frame.get_frame_type f);
-  assert_equal
-    (Some "0")
-    (Frame.get_header "content-length" f)
+  match Frame.frames_of_data ~s:parse_state ~d:data with
+    | Return.Failure (Frame.Unknown_cmd cmd) ->
+      assert_string ("Unknown command: " ^ cmd)
+    | Return.Failure (Frame.Exn Stream.Failure) ->
+      assert_string "Stream failure"
+    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+      assert_string ("Stream error: " ^ error)
+    | Return.Failure (Frame.Exn _) ->
+      assert_string "Unknown exception thrown"
+    | Return.Success ([frame], _) -> begin
+      assert_equal
+	~msg:"Not Connected frame"
+	Frame.Connected
+	(Frame.get_frame_type frame);
+      assert_equal
+	~msg:"Body not empty"
+	""
+	(Frame.get_body frame);
+      assert_equal
+	~msg:"Session not foo"
+	(Some "foo")
+	(Frame.get_header "session" frame)
+    end
+    | Return.Success (_, _) ->
+      assert_string "Parse wrong number of messages"
+
+let test_parse_double_msg _ =
+  let msg1 = "CONNECTED\nsession:foo\n\n\000"
+  and msg2 = "RECEIPT\nreceipt-id:bar\n\n\000"
+  and parse_state = Frame.parse_state
+  in
+  let data = msg1 ^ msg2
+  in
+  match Frame.frames_of_data ~s:parse_state ~d:data with
+    | Return.Failure (Frame.Unknown_cmd cmd) ->
+      assert_string ("Unknown command: " ^ cmd)
+    | Return.Failure (Frame.Exn Stream.Failure) ->
+      assert_string "Stream failure"
+    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+      assert_string ("Stream error: " ^ error)
+    | Return.Failure (Frame.Exn _) ->
+      assert_string "Unknown exception thrown"
+    | Return.Success ([frame1; frame2], _) -> begin
+      assert_equal
+	~msg:"Not Connected frame"
+	Frame.Connected
+	(Frame.get_frame_type frame1);
+      assert_equal
+	~msg:"Body not empty"
+	""
+	(Frame.get_body frame1);
+      assert_equal
+	~msg:"Session not foo"
+	(Some "foo")
+	(Frame.get_header "session" frame1);
+      assert_equal
+	~msg:"Not Receipt frame"
+	Frame.Receipt
+	(Frame.get_frame_type frame2);
+      assert_equal
+	~msg:"Body not empty"
+	""
+	(Frame.get_body frame2);
+      assert_equal
+	~msg:"receipt-id not bar"
+	(Some "bar")
+	(Frame.get_header "receipt-id" frame2);
+    end
+    | Return.Success (_, _) ->
+      assert_string "Parse wrong number of messages"
+
+let test_parse_with_null _ =
+  let data = "MESSAGE\ndestination:/topic/foo\ncontent-length:1\n\n\000\000"
+  and parse_state = Frame.parse_state
+  in
+  match Frame.frames_of_data ~s:parse_state ~d:data with
+    | Return.Failure (Frame.Unknown_cmd cmd) ->
+      assert_string ("Unknown command: " ^ cmd)
+    | Return.Failure (Frame.Exn Stream.Failure) ->
+      assert_string "Stream failure"
+    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+      assert_string ("Stream error: " ^ error)
+    | Return.Failure (Frame.Exn _) ->
+      assert_string "Unknown exception thrown"
+    | Return.Success ([frame], _) -> begin
+      assert_equal
+	~msg:"Not Message frame"
+	Frame.Message
+	(Frame.get_frame_type frame);
+      assert_equal
+	~msg:"Body not null byte"
+	"\000"
+	(Frame.get_body frame);
+      assert_equal
+	~msg:"destination not /topic/foo"
+	(Some "/topic/foo")
+	(Frame.get_header "destination" frame)
+    end
+    | Return.Success (_, _) ->
+      assert_string "Parse wrong number of messages"
+
+let test_space_in_header _ =
+  let data = "CONNECTED\nsession: foo\n\n\000"
+  and parse_state = Frame.parse_state
+  in
+  match Frame.frames_of_data ~s:parse_state ~d:data with
+    | Return.Failure (Frame.Unknown_cmd cmd) ->
+      assert_string ("Unknown command: " ^ cmd)
+    | Return.Failure (Frame.Exn Stream.Failure) ->
+      assert_string "Stream failure"
+    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+      assert_string ("Stream error: " ^ error)
+    | Return.Failure (Frame.Exn _) ->
+      assert_string "Unknown exception thrown"
+    | Return.Success ([frame], _) -> begin
+      assert_equal
+	~msg:"Not Connected frame"
+	Frame.Connected
+	(Frame.get_frame_type frame);
+      assert_equal
+	~msg:"Body not empty"
+	""
+	(Frame.get_body frame);
+      assert_equal
+	~msg:"Session not set to foo"
+	(Some "foo")
+	(Frame.get_header "session" frame)
+    end
+    | Return.Success (_, _) ->
+      assert_string "Parse wrong number of messages"
 
 let suite = "STOMP Frame Test" >:::
-  [ "disconnect" >:: test_disconnect ]
+  [ "Single message" >:: test_parse_single_msg
+  ; "Double mssage" >:: test_parse_double_msg
+  ; "Null in body" >:: test_parse_with_null
+  ; "Space in header" >:: test_space_in_header
+  ]
 
 let _ = run_test_tt_main suite

@@ -31,7 +31,7 @@ test: frame_test
 frame_test: frame_test.cmo
 	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,oUnit,stomp -custom -linkpkg -thread -o frame_test frame_test.cmo
 
-frame_test.cmo: frame_test.ml
+frame_test.cmo: frame_test.ml stomp.cma
 	ocamlfind ocamlc -package core_extended,threads,seq,ort_prelude,oUnit,stomp -c -thread frame_test.ml
 
 clean:
