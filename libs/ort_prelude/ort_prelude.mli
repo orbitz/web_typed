@@ -1,9 +1,9 @@
-module Return : sig 
-  type ('a, 'b) t =
-    | Success of 'a
-    | Failure of 'b
-
+module Result : sig
+  include module type of Core.Result
   val lift : (unit -> 'a) -> ('a, exn) t
+
+  val bind   : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
+  val return : 'a -> ('a, _) t
 end
 
 val (|>) : 'a -> ('a -> 'b) -> 'b

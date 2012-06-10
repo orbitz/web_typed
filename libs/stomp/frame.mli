@@ -38,7 +38,7 @@ val get_body       : 'a t -> string
 
 val connect        : ?h:headers -> (string * string) option -> outgoing t
 val send           : ?h:headers -> dst:string -> body:string -> outgoing t
-val subscribe      : ?h:headers -> ?ack:ack -> ?prefetch:int -> dst:string -> outgoing t
+val subscribe      : ?h:headers -> ?ack:ack -> ?prefetch:int option -> dst:string -> outgoing t
 val unsubscribe    : ?h:headers -> dst:string -> outgoing t
 val trans_begin    : ?h:headers -> outgoing t
 val trans_commit   : ?h:headers -> outgoing t
@@ -47,4 +47,4 @@ val ack            : ?h:headers -> mid:string -> outgoing t
 val disconnect     : outgoing t
 
 val parse_state    : parse_state
-val frames_of_data : s:parse_state -> d:string -> ((incoming t list * parse_state), error) Return.t
+val frames_of_data : s:parse_state -> d:string -> ((incoming t list * parse_state), error) Result.t

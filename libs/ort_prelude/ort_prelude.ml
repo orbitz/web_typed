@@ -1,14 +1,21 @@
-module Return = struct
-  type ('a, 'b) t =
-    | Success of 'a
-    | Failure of 'b
-	
+module Result = struct
+  include Core.Result
+
   let lift f =
     try
-      Success (f ())
+      Ok (f ())
     with
-      | anything ->
-	Failure anything
+      | exn ->
+	Error exn
+
+  let bind m f =
+    match m with
+      | Ok v ->
+	f v
+      | Error err ->
+	Error err
+
+  let return v = Ok v
 end
 
 let (|>) d f = f d

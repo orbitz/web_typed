@@ -55,15 +55,15 @@ let string_of_ack = function
 
 let cmd_of_string = function
   | "CONNECTED" ->
-    Return.Success Connected
+    Result.Ok Connected
   | "MESSAGE" ->
-    Return.Success Message
+    Result.Ok Message
   | "RECEIPT" ->
-    Return.Success Receipt
+    Result.Ok Receipt
   | "ERROR" ->
-    Return.Success Error
+    Result.Ok Error
   | unknown ->
-    Return.Failure (Unknown_cmd unknown)
+    Result.Error (Unknown_cmd unknown)
 
 let make_frame t h b =
   let h = content_length b h
@@ -96,11 +96,17 @@ let send ?(h = []) ~dst ~body =
     (header_add "destination" dst h)
     body
 
-let subscribe ?(h = []) ?(ack = Client) ?(prefetch = 1) ~dst =
+let subscribe ?(h = []) ?(ack = Client) ?(prefetch = None) ~dst =
   let h = h
           |> header_add "destination" dst
-	  |> header_add "prefetch" (string_of_int prefetch)
 	  |> header_add "ack" (string_of_ack ack)
+  in
+  let h =
+    match prefetch with
+      | None ->
+	h
+      | Some p ->
+	header_add "prefect" (string_of_int p) h
   in
   make_frame Subscribe h ""
 
@@ -125,7 +131,7 @@ let disconnect =
   make_frame Disconnect [] ""
 
 let rec parse_frames m =
-  Return.lift (fun () -> msg m)
+  Result.lift (fun () -> msg m)
 and msg = parser
   | [< f = frame; fs = frame_aux >] -> f::fs
 and frame = parser
@@ -162,15 +168,15 @@ let parse_state = ""
 
 let rec frames_of_tuples accum = function
   | [] ->
-    Return.Success (List.rev accum)
+    Result.Ok (List.rev accum)
   | (cmd, headers, body)::fs -> begin
     match cmd_of_string cmd with
-      | Return.Success cmd ->
+      | Result.Ok cmd ->
 	let frame = make_frame cmd headers body
 	in
 	frames_of_tuples (frame::accum) fs
-      | Return.Failure f ->
-	Return.Failure f
+      | Result.Error f ->
+	Result.Error f
   end
 
 let rec frames_of_data ~s ~d =
@@ -178,17 +184,17 @@ let rec frames_of_data ~s ~d =
   in
   match String.rsplit2 ~on:'\000' s with
     | None ->
-      Return.Success ([], s)
+      Result.Ok ([], s)
     | Some (msgs, rest) -> begin
       match parse_frames (Seq.of_string msgs) with
-	| Return.Success fs -> begin
+	| Result.Ok fs -> begin
 	  match frames_of_tuples [] fs with
-	    | Return.Success frames ->
-	      Return.Success (frames, rest)
-	    | Return.Failure f ->
-	      Return.Failure f
+	    | Result.Ok frames ->
+	      Result.Ok (frames, rest)
+	    | Result.Error f ->
+	      Result.Error f
 	end
-	| Return.Failure f ->
-	  Return.Failure (Exn f)
+	| Result.Error f ->
+	  Result.Error (Exn f)
     end
 
