@@ -1,4 +1,5 @@
-CAMLP4=-pp "camlp4o pa_extend.cmo"
+CAMLP4=-pp "camlp4o pa_extend.cmo" -pp "camlp4orf -I ../pa_monad ../pa_monad/pa_monad.cmo"
+
 PACKAGE=-package core_extended,threads,seq,ort_prelude
 
 .PHONY: all clean test

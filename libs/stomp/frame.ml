@@ -35,10 +35,7 @@ type 'a t = { frame_type : 'a
 
 type parse_state = string
 
-
-type error =
-  | Unknown_cmd of string
-  | Exn of exn
+exception Unknown_cmd of string
 
 let header_add k v h = (k, v)::h
 let header_get k h = List.Assoc.find h ~equal:(=) k
@@ -186,15 +183,10 @@ let rec frames_of_data ~s ~d =
     | None ->
       Result.Ok ([], s)
     | Some (msgs, rest) -> begin
-      match parse_frames (Seq.of_string msgs) with
-	| Result.Ok fs -> begin
-	  match frames_of_tuples [] fs with
-	    | Result.Ok frames ->
-	      Result.Ok (frames, rest)
-	    | Result.Error f ->
-	      Result.Error f
-	end
-	| Result.Error f ->
-	  Result.Error (Exn f)
+      perform with module Result in
+	fs <-- parse_frames (Seq.of_string msgs);
+	frames <-- frames_of_tuples [] fs;
+	Result.return (frames, rest)
     end
+
 
