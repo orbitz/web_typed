@@ -8,15 +8,15 @@ let test_parse_single_msg _ =
   and parse_state = Frame.parse_state
   in
   match Frame.frames_of_data ~s:parse_state ~d:data with
-    | Return.Failure (Frame.Unknown_cmd cmd) ->
+    | Result.Error (Frame.Unknown_cmd cmd) ->
       assert_string ("Unknown command: " ^ cmd)
-    | Return.Failure (Frame.Exn Stream.Failure) ->
+    | Result.Error Stream.Failure ->
       assert_string "Stream failure"
-    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+    | Result.Error (Stream.Error error) ->
       assert_string ("Stream error: " ^ error)
-    | Return.Failure (Frame.Exn _) ->
+    | Result.Error _ ->
       assert_string "Unknown exception thrown"
-    | Return.Success ([frame], _) -> begin
+    | Result.Ok ([frame], _) -> begin
       assert_equal
 	~msg:"Not Connected frame"
 	Frame.Connected
@@ -30,7 +30,7 @@ let test_parse_single_msg _ =
 	(Some "foo")
 	(Frame.get_header "session" frame)
     end
-    | Return.Success (_, _) ->
+    | Result.Ok (_, _) ->
       assert_string "Parse wrong number of messages"
 
 let test_parse_double_msg _ =
@@ -41,15 +41,15 @@ let test_parse_double_msg _ =
   let data = msg1 ^ msg2
   in
   match Frame.frames_of_data ~s:parse_state ~d:data with
-    | Return.Failure (Frame.Unknown_cmd cmd) ->
+    | Result.Error (Frame.Unknown_cmd cmd) ->
       assert_string ("Unknown command: " ^ cmd)
-    | Return.Failure (Frame.Exn Stream.Failure) ->
+    | Result.Error Stream.Failure ->
       assert_string "Stream failure"
-    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+    | Result.Error (Stream.Error error) ->
       assert_string ("Stream error: " ^ error)
-    | Return.Failure (Frame.Exn _) ->
+    | Result.Error _ ->
       assert_string "Unknown exception thrown"
-    | Return.Success ([frame1; frame2], _) -> begin
+    | Result.Ok ([frame1; frame2], _) -> begin
       assert_equal
 	~msg:"Not Connected frame"
 	Frame.Connected
@@ -75,7 +75,7 @@ let test_parse_double_msg _ =
 	(Some "bar")
 	(Frame.get_header "receipt-id" frame2);
     end
-    | Return.Success (_, _) ->
+    | Result.Ok (_, _) ->
       assert_string "Parse wrong number of messages"
 
 let test_parse_with_null _ =
@@ -83,15 +83,15 @@ let test_parse_with_null _ =
   and parse_state = Frame.parse_state
   in
   match Frame.frames_of_data ~s:parse_state ~d:data with
-    | Return.Failure (Frame.Unknown_cmd cmd) ->
+    | Result.Error (Frame.Unknown_cmd cmd) ->
       assert_string ("Unknown command: " ^ cmd)
-    | Return.Failure (Frame.Exn Stream.Failure) ->
+    | Result.Error Stream.Failure ->
       assert_string "Stream failure"
-    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+    | Result.Error (Stream.Error error) ->
       assert_string ("Stream error: " ^ error)
-    | Return.Failure (Frame.Exn _) ->
+    | Result.Error _ ->
       assert_string "Unknown exception thrown"
-    | Return.Success ([frame], _) -> begin
+    | Result.Ok ([frame], _) -> begin
       assert_equal
 	~msg:"Not Message frame"
 	Frame.Message
@@ -105,7 +105,7 @@ let test_parse_with_null _ =
 	(Some "/topic/foo")
 	(Frame.get_header "destination" frame)
     end
-    | Return.Success (_, _) ->
+    | Result.Ok (_, _) ->
       assert_string "Parse wrong number of messages"
 
 let test_space_in_header _ =
@@ -113,15 +113,15 @@ let test_space_in_header _ =
   and parse_state = Frame.parse_state
   in
   match Frame.frames_of_data ~s:parse_state ~d:data with
-    | Return.Failure (Frame.Unknown_cmd cmd) ->
+    | Result.Error (Frame.Unknown_cmd cmd) ->
       assert_string ("Unknown command: " ^ cmd)
-    | Return.Failure (Frame.Exn Stream.Failure) ->
+    | Result.Error Stream.Failure ->
       assert_string "Stream failure"
-    | Return.Failure (Frame.Exn (Stream.Error error)) ->
+    | Result.Error (Stream.Error error) ->
       assert_string ("Stream error: " ^ error)
-    | Return.Failure (Frame.Exn _) ->
+    | Result.Error _ ->
       assert_string "Unknown exception thrown"
-    | Return.Success ([frame], _) -> begin
+    | Result.Ok ([frame], _) -> begin
       assert_equal
 	~msg:"Not Connected frame"
 	Frame.Connected
@@ -135,7 +135,7 @@ let test_space_in_header _ =
 	(Some "foo")
 	(Frame.get_header "session" frame)
     end
-    | Return.Success (_, _) ->
+    | Result.Ok (_, _) ->
       assert_string "Parse wrong number of messages"
 
 let suite = "STOMP Frame Test" >:::
