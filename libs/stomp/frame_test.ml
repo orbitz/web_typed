@@ -11,6 +11,8 @@ let scaffold d f =
       assert_string "Stream failure"
     | Result.Error (Stream.Error error) ->
       assert_string ("Stream error: " ^ error)
+    | Result.Error Frame.Frame_length ->
+      assert_string "Frame length wrong"
     | Result.Error _ ->
       assert_string "Unknown exception thrown"
     | Result.Ok v ->

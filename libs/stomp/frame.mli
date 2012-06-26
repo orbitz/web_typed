@@ -1,3 +1,4 @@
+open Core_extended.Std
 open Ort_prelude
 
 (* Outgoing message types *)
@@ -29,6 +30,7 @@ type headers = (string * string) list
 type parse_state
 
 exception Unknown_cmd of string
+exception Frame_length
 
 val get_frame_type : 'a t -> 'a
 val get_header     : k:string -> 'a t -> string option
@@ -46,3 +48,5 @@ val disconnect     : outgoing t
 
 val parse_state    : parse_state
 val frames_of_data : s:parse_state -> d:string -> ((incoming t list * parse_state), exn) Result.t
+
+val to_string      : outgoing t -> string
