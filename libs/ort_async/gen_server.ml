@@ -17,7 +17,7 @@ module type GEN_SERVER = sig
   type state
   type msg
 
-  val init : args -> (state, 'b) Result.t Deferred.t
+  val init : msg Tail.t -> args -> (state, 'b) Result.t Deferred.t
   val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
   val terminate: state -> unit
 end
@@ -28,7 +28,6 @@ module Make = functor (Gs : GEN_SERVER) -> struct
   type msg   = Gs.msg
 
   type queue = msg Tail.t
-
   type exited = Normal | Failed
 
   type t = { q      : queue
@@ -38,7 +37,6 @@ module Make = functor (Gs : GEN_SERVER) -> struct
   let make_gs () = { q      = Tail.create ()
 		   ; exited = Ivar.create ()
 		   }
-
 
   let do_call state msg =
     Deferred.bind
@@ -52,15 +50,15 @@ module Make = functor (Gs : GEN_SERVER) -> struct
 	| Result.Error exn ->
 	  Deferred.return (Result.Error (`Exn exn)))
 
-  let terminate_failure gs state =
-    Ivar.fill gs.exited Failed;
+  let terminate_failure self state =
+    Ivar.fill self.exited Failed;
     Gs.terminate state
 
-  let terminate_normal gs state =
-    Ivar.fill gs.exited Normal;
+  let terminate_normal self state =
+    Ivar.fill self.exited Normal;
     Gs.terminate state
 
-  let rec loop gs state = function
+  let rec loop self state = function
     | Stream.Nil -> raise (Failure "Not implemented")
     | Stream.Cons (msg, msg') ->
       Deferred.upon
@@ -69,23 +67,23 @@ module Make = functor (Gs : GEN_SERVER) -> struct
 	  | Result.Ok (`Cont, state') ->
 	    Deferred.upon
 	      (Stream.next msg')
-	      (loop gs state')
+	      (loop self state')
 	  | Result.Ok (`Stop, state') ->
-	    terminate_normal gs state'
+	    terminate_normal self state'
 	  | Result.Error _ ->
-	    terminate_failure gs state)
+	    terminate_failure self state)
 
   let start args =
+    let self = make_gs ()
+    in
     Deferred.bind
-      (Gs.init args)
+      (Gs.init self.q args)
       (function
 	| Result.Ok state -> begin
-	  let gs = make_gs ()
-	  in
 	  Deferred.upon
-	    (Stream.next (Tail.collect gs.q))
-	    (loop gs state);
-	  Deferred.return (Result.Ok gs)
+	    (Stream.next (Tail.collect self.q))
+	    (loop self state);
+	  Deferred.return (Result.Ok self)
 	end
 	| Result.Error f ->
 	  Deferred.return (Result.Error f))

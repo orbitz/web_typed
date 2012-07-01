@@ -6,7 +6,7 @@ module Test_server_impl = struct
   type state = int
   type msg = [ `Incr of int | `Get of int Ivar.t | `Stop ]
 
-  let init start = Deferred.return (Result.Ok start)
+  let init _ start = Deferred.return (Result.Ok start)
 
   let handle_call state = function
     | `Incr n  -> Deferred.return (Result.Ok (`Cont, state + n))
