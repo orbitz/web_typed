@@ -47,6 +47,10 @@ val ack            : ?h:headers -> mid:string -> outgoing t
 val disconnect     : outgoing t
 
 val parse_state    : parse_state
-val frames_of_data : s:parse_state -> d:string -> ((incoming t list * parse_state), exn) Result.t
+val frames_of_data :
+  s:parse_state ->
+  d:string ->
+  len:int ->
+  ((incoming t list * parse_state), exn) Result.t
 
 val to_string      : outgoing t -> string

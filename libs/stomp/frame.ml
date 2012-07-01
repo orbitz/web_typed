@@ -211,8 +211,8 @@ let rec frames_of_tuples accum = function
 	Result.Error f
   end
 
-let rec frames_of_data ~s ~d =
-  let s = s ^ d
+let rec frames_of_data ~s ~d ~len =
+  let s = s ^ String.sub d ~pos:0 ~len:len
   in
   match String.rsplit2 ~on:'\000' s with
     | None ->
