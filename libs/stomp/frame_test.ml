@@ -23,7 +23,10 @@ let test_parse_single_msg _ =
   and parse_state = Frame.parse_state
   in
   scaffold
-    (Frame.frames_of_data ~s:parse_state ~d:data)
+    (Frame.frames_of_data
+       ~s:parse_state
+       ~d:data
+       ~len:(String.length data))
     (function
       | ([frame], _) -> begin
 	assert_equal
@@ -50,7 +53,10 @@ let test_parse_double_msg _ =
   let data = msg1 ^ msg2
   in
   scaffold
-    (Frame.frames_of_data ~s:parse_state ~d:data)
+    (Frame.frames_of_data
+       ~s:parse_state
+       ~d:data
+       ~len:(String.length data))
     (function
       | ([frame1; frame2], _) -> begin
 	assert_equal
@@ -86,7 +92,10 @@ let test_parse_with_null _ =
   and parse_state = Frame.parse_state
   in
   scaffold
-    (Frame.frames_of_data ~s:parse_state ~d:data)
+    (Frame.frames_of_data
+       ~s:parse_state
+       ~d:data
+       ~len:(String.length data))
     (function
       | ([frame], _) -> begin
 	assert_equal
@@ -109,8 +118,11 @@ let test_space_in_header _ =
   let data = "CONNECTED\nsession: foo\n\n\000"
   and parse_state = Frame.parse_state
   in
-  scaffold(
-    Frame.frames_of_data ~s:parse_state ~d:data)
+  scaffold
+    (Frame.frames_of_data
+       ~s:parse_state
+       ~d:data
+       ~len:(String.length data))
     (function
       | ([frame], _) -> begin
 	assert_equal
@@ -129,11 +141,28 @@ let test_space_in_header _ =
       | (_, _) ->
 	assert_string "Parse wrong number of messages")
 
+let test_partial_msg _ =
+  let data = "CONNECTED\n"
+  and parse_state = Frame.parse_state
+  in
+  scaffold
+    (Frame.frames_of_data
+       ~s:parse_state
+       ~d:data
+       ~len:(String.length data))
+    (function
+      | (frames, _) ->
+	assert_equal
+	  ~msg:"Not empty message"
+	  []
+	  frames)
+
 let suite = "STOMP Frame Test" >:::
   [ "Single message" >:: test_parse_single_msg
   ; "Double mssage" >:: test_parse_double_msg
   ; "Null in body" >:: test_parse_with_null
   ; "Space in header" >:: test_space_in_header
+  ; "Partial message" >:: test_partial_msg
   ]
 
 let _ = run_test_tt_main suite

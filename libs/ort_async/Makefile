@@ -41,4 +41,4 @@ gen_server_test.cmo: gen_server_test.ml ort_async.cma
 	ocamlfind ocamlc $(PACKAGE),ort_async -thread -c gen_server_test.ml
 
 clean:
-	rm *.cmo *.cmi *.cmx *.cma *.cmxa *.a *.o
+	rm *.cmo *.cmi *.cmx *.cma *.cmxa *.a *.o gen_server_test

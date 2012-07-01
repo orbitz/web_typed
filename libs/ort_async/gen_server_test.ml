@@ -4,13 +4,14 @@ open Async.Std
 module Test_server_impl = struct
   type args  = int
   type state = int
-  type msg = [ `Incr of int | `Get of int Ivar.t ]
+  type msg = [ `Incr of int | `Get of int Ivar.t | `Stop ]
 
   let init start = Deferred.return (Result.Ok start)
 
   let handle_call state = function
     | `Incr n  -> Deferred.return (Result.Ok (`Cont, state + n))
     | `Get ret -> (Ivar.fill ret state; Deferred.return (Result.Ok (`Cont, state)))
+    | `Stop    -> Deferred.return (Result.Ok (`Stop, state))
 
   let terminate _ = ()
 end
@@ -22,6 +23,15 @@ let get gs    = let ivar = Ivar.create ()
 		in
 		Test_server.call (`Get ivar) gs;
 		ivar
+let stop gs   = Test_server.call `Stop gs
+
+let shutdown gs =
+  stop gs;
+  Deferred.upon
+    (Ivar.read (Test_server.exited gs))
+    (function
+      | Test_server.Normal -> Shutdown.shutdown 0
+      | Test_server.Failed -> Shutdown.shutdown 3)
 
 let test_gen_server () =
   Deferred.upon
@@ -33,7 +43,7 @@ let test_gen_server () =
 	Deferred.upon
 	  (Ivar.read (get gs))
 	  (function
-	    | 3 -> Shutdown.shutdown 0
+	    | 3 -> shutdown gs
 	    | n -> begin
 	      Printf.printf "Error: Got %d\n" n;
 	      Shutdown.shutdown 1
