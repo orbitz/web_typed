@@ -2,22 +2,41 @@
  * This implements an Erlang-style gen_server.
  *
  * An implementor needs to provide the following
- * callbacks:
+ * functions:
  *
- * - init: Takes arguments and returns a state
- * - handle_call: Takes a call and returns a state
- *                These are serialized
+ * - init: Takes its own message queue, its own exited Ivar and start args
+ *         init is responsible for not throwing exceptions, or the caller of
+ *         start is responsible for handling any exceptions thrown.
+ *         Can return Result.Ok state or Result.Failure err
+ * - handle_call: This handles a call.  The first parameter is the current
+ *                state, the next is the message.  It can return the following
+ *                vales:
+ *                Result.Ok (`Cont, state) -- Continue with the new state
+ *                Result.Ok (`Stop, state) -- Stop normally with the new state
+ *                Result.Failure err       -- Exit with a failure
+ *                raise an exception       -- Exit with an error
  * - terminate: Called upon termination with state
+ *
+ * The functor creates a module with the following functions:
+ * - start: Start the server with the args
+ *          On success Result.Ok server, on failure result.Failure err
+ *          This does not handle init throwing exceptions.
+ * - call: Takes a message and a server, asychronously sends the message
+ * - exited: Returns an Ivar that will be filed with Normal or Failed
+ *           that will be filled when the server exits.
  *)
 open Core.Std
 open Async.Std
+
+type exit_t = Normal | Failed
+type exited = exit_t Ivar.t
 
 module type GEN_SERVER = sig
   type args
   type state
   type msg
 
-  val init : msg Tail.t -> args -> (state, 'b) Result.t Deferred.t
+  val init : msg Tail.t -> exited -> args -> (state, 'b) Result.t Deferred.t
   val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
   val terminate: state -> unit
 end
@@ -28,10 +47,10 @@ module Make = functor (Gs : GEN_SERVER) -> struct
   type msg   = Gs.msg
 
   type queue = msg Tail.t
-  type exited = Normal | Failed
+
 
   type t = { q      : queue
-	   ; exited : exited Ivar.t
+	   ; exited : exited
 	   }
 
   let make_gs () = { q      = Tail.create ()
@@ -77,7 +96,7 @@ module Make = functor (Gs : GEN_SERVER) -> struct
     let self = make_gs ()
     in
     Deferred.bind
-      (Gs.init self.q args)
+      (Gs.init self.q self.exited args)
       (function
 	| Result.Ok state -> begin
 	  Deferred.upon
