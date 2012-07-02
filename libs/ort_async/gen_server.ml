@@ -36,7 +36,7 @@ module type GEN_SERVER = sig
   type state
   type msg
 
-  val init : msg Tail.t -> exited -> args -> (state, 'b) Result.t Deferred.t
+  val init : (msg Tail.t * exited) -> args -> (state, 'b) Result.t Deferred.t
   val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
   val terminate: state -> unit
 end
@@ -96,7 +96,7 @@ module Make = functor (Gs : GEN_SERVER) -> struct
     let self = make_gs ()
     in
     Deferred.bind
-      (Gs.init self.q self.exited args)
+      (Gs.init (self.q, self.exited) args)
       (function
 	| Result.Ok state -> begin
 	  Deferred.upon
