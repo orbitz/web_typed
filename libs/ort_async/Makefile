@@ -25,11 +25,14 @@ ort_async.cmo: async_result.cmo gen_server.cmo
 async_result.cmo: async_result.ml async_result.cmi
 	ocamlfind ocamlc $(PACKAGE) -thread -c async_result.ml
 
-gen_server.cmx: gen_server.ml
+gen_server.cmx: gen_server.ml gen_server.cmi
 	ocamlfind ocamlopt $(PACKAGE) -thread -c -for-pack Ort_async gen_server.ml
 
-gen_server.cmo: gen_server.ml
+gen_server.cmo: gen_server.ml gen_server.cmi
 	ocamlfind ocamlc $(PACKAGE) -thread -c gen_server.ml
+
+gen_server.cmi: gen_server.mli
+	ocamlfind ocamlc $(PACKAGE) -thread -c gen_server.mli
 
 test: gen_server_test
 	./gen_server_test

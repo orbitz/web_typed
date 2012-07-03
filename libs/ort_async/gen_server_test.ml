@@ -3,7 +3,7 @@ open Async.Std
 
 module Test_server_impl = struct
   type args  = int
-  type init_error = [ `Foo ]
+  type init_fail = [ `Foo ]
   type state = int
   type msg = [ `Incr of int | `Get of int Ivar.t | `Stop ]
 
@@ -35,20 +35,18 @@ let shutdown gs =
       | Ort_async.Gen_server.Failed -> Shutdown.shutdown 3)
 
 let test_gen_server () =
-  Deferred.upon
-    (Test_server.start 0)
-    (function
+    Test_server.start 0
+    >>> (function
       | Result.Ok gs -> begin
 	incr gs 1;
 	incr gs 2;
-	Deferred.upon
-	  (Ivar.read (get gs))
-	  (function
-	    | 3 -> shutdown gs
-	    | n -> begin
-	      Printf.printf "Error: Got %d\n" n;
-	      Shutdown.shutdown 1
-	    end)
+	Ivar.read (get gs)
+	>>> (function
+	  | 3 -> shutdown gs
+	  | n -> begin
+	    Printf.printf "Error: Got %d\n" n;
+	    Shutdown.shutdown 1
+	  end)
       end
       | Result.Error _ ->
 	Shutdown.shutdown 2)

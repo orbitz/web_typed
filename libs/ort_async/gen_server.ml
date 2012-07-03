@@ -34,22 +34,29 @@ type exited = exit_t Ivar.t
 
 module type GEN_SERVER = sig
   type args
-  type init_error
+  type init_fail
   type state
   type msg
 
-  val init : ((msg -> unit) * exited) -> args -> (state, init_error) Result.t Deferred.t
-  val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
+  val init :
+    ((msg -> unit) * exited) ->
+    args ->
+    (state, init_fail) Result.t Deferred.t
+
+  val handle_call :
+    state ->
+    msg ->
+    ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
+
   val terminate: state -> unit
 end
 
 module Make = functor (Gs : GEN_SERVER) -> struct
-  type args  = Gs.args
-  type state = Gs.state
-  type msg   = Gs.msg
-
-  type queue = msg Tail.t
-
+  type args       = Gs.args
+  type start_fail = Gs.init_fail
+  type state      = Gs.state
+  type msg        = Gs.msg
+  type queue      = msg Tail.t
 
   type t = { q      : queue
 	   ; exited : exited
