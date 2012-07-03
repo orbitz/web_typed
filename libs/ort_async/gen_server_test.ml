@@ -36,20 +36,20 @@ let shutdown gs =
 
 let test_gen_server () =
     Test_server.start 0
-    >>> (function
+    >>> function
       | Result.Ok gs -> begin
 	incr gs 1;
 	incr gs 2;
 	Ivar.read (get gs)
-	>>> (function
+	>>> function
 	  | 3 -> shutdown gs
 	  | n -> begin
 	    Printf.printf "Error: Got %d\n" n;
 	    Shutdown.shutdown 1
-	  end)
+	  end
       end
       | Result.Error _ ->
-	Shutdown.shutdown 2)
+	Shutdown.shutdown 2
 
 let () =
   test_gen_server ();
