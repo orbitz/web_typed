@@ -3,6 +3,7 @@ open Async.Std
 
 module Test_server_impl = struct
   type args  = int
+  type init_error = [ `Foo ]
   type state = int
   type msg = [ `Incr of int | `Get of int Ivar.t | `Stop ]
 

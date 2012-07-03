@@ -33,10 +33,11 @@ type exited = exit_t Ivar.t
 
 module type GEN_SERVER = sig
   type args
+  type init_error
   type state
   type msg
 
-  val init : (msg Tail.t * exited) -> args -> (state, 'b) Result.t Deferred.t
+  val init : (msg Tail.t * exited) -> args -> (state, init_error) Result.t Deferred.t
   val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
   val terminate: state -> unit
 end
