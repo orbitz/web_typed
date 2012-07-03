@@ -20,6 +20,8 @@ end
 
 let (|>) d f = f d
 
+let flip f a b = f b a
+
 let string_of_list l =
   let b = Buffer.create (List.length l) in
   l |> List.iter (Buffer.add_char b);

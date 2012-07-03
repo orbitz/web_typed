@@ -25,6 +25,7 @@
  * - exited: Returns an Ivar that will be filed with Normal or Failed
  *           that will be filled when the server exits.
  *)
+open Ort_prelude
 open Core.Std
 open Async.Std
 
@@ -37,7 +38,7 @@ module type GEN_SERVER = sig
   type state
   type msg
 
-  val init : (msg Tail.t * exited) -> args -> (state, init_error) Result.t Deferred.t
+  val init : ((msg -> unit) * exited) -> args -> (state, init_error) Result.t Deferred.t
   val handle_call : state -> msg -> ([`Cont | `Stop] * state, 'a) Result.t Deferred.t
   val terminate: state -> unit
 end
@@ -78,6 +79,10 @@ module Make = functor (Gs : GEN_SERVER) -> struct
     Ivar.fill self.exited Normal;
     Gs.terminate state
 
+  let call msg gs = Tail.extend gs.q msg
+
+  let exited gs = gs.exited
+
   let rec loop self state = function
     | Stream.Nil -> raise (Failure "Not implemented")
     | Stream.Cons (msg, msg') ->
@@ -97,7 +102,7 @@ module Make = functor (Gs : GEN_SERVER) -> struct
     let self = make_gs ()
     in
     Deferred.bind
-      (Gs.init (self.q, self.exited) args)
+      (Gs.init (flip call self, self.exited) args)
       (function
 	| Result.Ok state -> begin
 	  Deferred.upon
@@ -107,9 +112,5 @@ module Make = functor (Gs : GEN_SERVER) -> struct
 	end
 	| Result.Error f ->
 	  Deferred.return (Result.Error f))
-
-  let call msg gs = Tail.extend gs.q msg
-
-  let exited gs = gs.exited
 end
 

@@ -7,5 +7,6 @@ module Result : sig
 end
 
 val (|>) : 'a -> ('a -> 'b) -> 'b
+val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
 
 val string_of_list : char list -> string
