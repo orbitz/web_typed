@@ -35,4 +35,5 @@ module Make : functor (Gs : GEN_SERVER) -> sig
   val start  : args -> (t, start_fail) Result.t Deferred.t
   val call   : msg -> t -> unit
   val exited : t -> exited
+  val equal  : t -> t -> bool
 end

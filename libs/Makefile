@@ -1,28 +1,25 @@
 SUBDIRS=ort_prelude stomp pa_monad ort_async
 
-.PHONY: all clean test $(SUBDIRS)
+subdirs_test=$(patsubst %,%_test,$(SUBDIRS))
+subdirs_clean=$(patsubst %,%_clean,$(SUBDIRS))
 
-all: $(SUBDIRS) pa_monad
+.PHONY: all clean test $(SUBDIRS) $(subdirs_test) $(subdirs_clean)
 
-ort_prelude:
-	$(MAKE) -C ort_prelude
+all: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@
 
 stomp: ort_prelude pa_monad ort_async
-	$(MAKE) -C stomp
-
-pa_monad:
-	$(MAKE) -C pa_monad
 
 ort_async: pa_monad
-	$(MAKE) -C ort_async
 
-test: all
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir test; \
-	done
+test: $(subdirs_test)
 
+$(subdirs_test):
+	$(MAKE) -C $(patsubst %_test,%,$@) test
 
-clean:
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir clean; \
-	done
+clean: $(subdirs_clean)
+
+$(subdirs_clean):
+	-$(MAKE) -C $(patsubst %_clean,%,$@) clean

@@ -60,10 +60,12 @@ module Make = functor (Gs : GEN_SERVER) -> struct
 
   type t = { q      : queue
 	   ; exited : exited
+	   ; id     : unit ref
 	   }
 
   let make_gs () = { q      = Tail.create ()
 		   ; exited = Ivar.create ()
+		   ; id     = ref ()
 		   }
 
   let do_call state msg =
@@ -89,6 +91,8 @@ module Make = functor (Gs : GEN_SERVER) -> struct
   let call msg gs = Tail.extend gs.q msg
 
   let exited gs = gs.exited
+
+  let equal gs1 gs2 = gs1.id = gs2.id
 
   let rec loop self state = function
     | Stream.Nil -> raise (Failure "Not implemented")
